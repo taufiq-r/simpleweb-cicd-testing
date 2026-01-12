@@ -1,4 +1,4 @@
-name: CI - build and push
+name: ci-build-push
 
 on:
   push:
@@ -50,21 +50,3 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: ${{ steps.image-vars.outputs.backend_image }}:latest
-
-      - name: Post success notification to Discord
-        if: success()
-        uses: ./.github/actions/discord-notify
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: success
-          title: "CI Success: ${{ github.repository }}"
-          body: "Frontend: ${{ steps.image-vars.outputs.frontend_image }}:latest\nBackend: ${{ steps.image-vars.outputs.backend_image }}:latest"
-
-      - name: Post failure notification to Discord
-        if: failure()
-        uses: ./.github/actions/discord-notify
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: failure
-          title: "CI Failed: ${{ github.repository }}"
-          body: "Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

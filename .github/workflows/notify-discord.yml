@@ -4,8 +4,9 @@ on:
   workflow_run:
     workflows:
       - lint-test
-      - deploy-stagging
+      - deploy-staging
       - deploy-production
+      - ci-build-push
     types:
       - completed
 
