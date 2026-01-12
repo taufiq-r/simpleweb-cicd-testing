@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: changeme
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    configs:
+      - source: pgbouncer_ini
+        target: /etc/pgbouncer/pgbouncer.ini
+    ports:
+      - 6432:6432
+
+  backend:
+    image: ghcr.io/IMAGE_OWNER/REPO-backend:latest
+    environment:
+      DATABASE_URL: postgres://app:changeme@pgbouncer:6432/appdb
+    deploy:
+      replicas: 2
+
+  frontend:
+    image: ghcr.io/IMAGE_OWNER/REPO-frontend:latest
+    ports:
+      - 80:80
+
+configs:
+  pgbouncer_ini:
+    file: ./pgbouncer/pgbouncer.ini
+
+volumes:
+  pgdata:

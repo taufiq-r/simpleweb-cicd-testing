@@ -1,0 +1,28 @@
+name: Discord notify composite
+description: Simple composite action to send a discord webhook message
+inputs:
+  webhook:
+    description: 'Discord webhook URL (use secret)'
+    required: true
+  status:
+    description: 'success|failure|info'
+    required: true
+  title:
+    description: 'Title for embed'
+    required: true
+  body:
+    description: 'Body/description for embed'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Send Discord message
+      shell: bash
+      run: |
+        read -r TITLE <<<"${{ inputs.title }}"
+        read -r BODY <<<"${{ inputs.body }}"
+        read -r STATUS <<<"${{ inputs.status }}"
+        cat > /tmp/payload.json <<'JSON'
+        {"embeds": [{"title": "${TITLE}", "description":"${BODY}", "fields":[{"name":"Status","value":"${STATUS}"}]}]}
+        JSON
+        curl -s -H "Content-Type: application/json" -X POST -d @/tmp/payload.json "${{ inputs.webhook }}"

@@ -1,0 +1,1 @@
+"app" "md5$(echo -n 'changeme' | md5sum | awk '{print $1}')"

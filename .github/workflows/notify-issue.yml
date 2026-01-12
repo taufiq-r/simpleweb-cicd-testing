@@ -1,0 +1,31 @@
+name: Notify Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send Discord notif for new issue
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: info
+          title: 'New Issue: ${{ github.event.issue.title }}'
+          body: "${{ github.event.issue.html_url }}\nOpened by: ${{ github.event.issue.user.login }}"
+
+      - name: Post a bot comment on the issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.issue;
+            await github.rest.issues.createComment({
+              owner: issue.owner || context.repo.owner,
+              repo: issue.repo || context.repo.repo,
+              issue_number: issue.number,
+              body: 'Thanks for the report! A team bot thread has been created in the Dev channel.'
+            });

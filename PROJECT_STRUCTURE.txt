@@ -1,0 +1,263 @@
+Full-Stack Application with CI/CD Infrastructure
+================================================
+
+testing/
+│
+├── .github/                                    # GitHub Actions configuration
+│   ├── actions/
+│   │   └── discord-notify/
+│   │       └── action.yml                     # Reusable Discord webhook action
+│   │
+│   └── workflows/
+│       ├── ci.yml                             # Build & push images (all branches)
+│       ├── deploy-staging.yml                 # Deploy to staging (develop branch)
+│       ├── deploy-production.yml              # Deploy to production (main branch)
+│       ├── notify-issue.yml                   # Notify Discord on new issues
+│       ├── notify-pr.yml                      # Notify Discord on new PRs
+│       └── lint-test.yml                      # Optional: linting and testing
+│
+├── frontend/                                   # React + Vite + TypeScript
+│   ├── Dockerfile                             # Multi-stage build: Node → Nginx
+│   ├── package.json                           # Dependencies: React, Zustand, TanStack, etc.
+│   ├── vite.config.ts                         # Vite configuration
+│   ├── index.html                             # HTML entry point
+│   └── src/
+│       ├── main.tsx                           # React entry
+│       └── App.tsx                            # Root component
+│
+├── backend/                                    # Bun + Hono + TypeScript
+│   ├── Dockerfile                             # Bun runtime image
+│   ├── package.json                           # Dependencies: Hono, Zod, etc.
+│   └── src/
+│       └── index.ts                           # Hono app with routes
+│
+├── docker-compose.yml                         # Local dev: postgres, pgbouncer, services
+│
+├── pgbouncer/                                  # PostgreSQL connection pooling
+│   ├── pgbouncer.ini                          # Pool configuration
+│   ├── userlist.txt                           # User credentials (MD5 hashed)
+│   └── gen-hash.sh                            # Script to generate MD5 password hash
+│
+├── nginx/                                      # Reverse proxy
+│   └── nginx.conf                             # Routes /api/* to backend, / to frontend
+│
+├── nomad/                                      # HashiCorp Nomad job definitions
+│   ├── postgres.nomad                         # PostgreSQL 17 job
+│   ├── pgbouncer.nomad                        # PGBouncer job (service discovery)
+│   ├── backend.nomad                          # Backend API job
+│   ├── frontend.nomad                         # Frontend SPA job
+│   └── nginx.nomad                            # Nginx reverse proxy job
+│
+├── stack/                                      # Docker Swarm stack definitions
+│   └── docker-stack.yml                       # Services for Docker Swarm deployment
+│
+├── scripts/                                    # Deployment and setup scripts
+│   ├── deploy.sh                              # Main deployment script (SSH-executed)
+│   ├── setup-server.sh                        # Initialize staging/prod server
+│   ├── gen-pgbouncer-pwd.sh                   # Generate pgbouncer password hash
+│   └── validate.sh                            # Local validation checks
+│
+├── docs/                                       # Comprehensive documentation
+│   ├── GITHUB_ACTIONS.md                      # Secrets setup, workflow details
+│   ├── DEPLOYMENT.md                          # Server setup, manual deployment
+│   └── ARCHITECTURE.md                        # System design, scaling, security
+│
+├── README.md                                   # Main project documentation
+├── QUICKSTART.md                              # Quick start guide (5-min setup)
+├── .env.example                               # Environment variables template
+├── .gitignore                                  # Git ignore patterns
+└── PROJECT_STRUCTURE.txt                      # This file
+
+═════════════════════════════════════════════════════════════════════════════
+
+TECH STACK SUMMARY
+──────────────────
+
+Frontend:
+  • React 18.2 (UI framework)
+  • Vite (fast build tool)
+  • TypeScript (type safety)
+  • Zustand (state management)
+  • TanStack Query (data fetching)
+  • TanStack Router (file-based routing)
+  • shadcn UI + Tailwind CSS 4 (components & styles)
+  • Tabler/Iconly (icons)
+  • Zod (schema validation)
+
+Backend:
+  • Bun (runtime)
+  • Hono (HTTP framework)
+  • TypeScript (type safety)
+  • Zod (schema validation)
+  • Drizzle ORM (ready to implement)
+  • Scalar (OpenAPI docs - ready to implement)
+
+Database:
+  • PostgreSQL 17 (primary DB)
+  • PGBouncer (connection pooling)
+  • Support for multi-tenant schemas
+
+Infrastructure:
+  • Docker & Docker Compose (containerization)
+  • Nginx (reverse proxy, load balancer)
+  • Docker Swarm (orchestration option 1)
+  • Nomad (orchestration option 2)
+  • GitHub Actions (CI/CD)
+  • GHCR (container registry)
+
+Optional:
+  • Wasabi S3 (object storage via Bun SDK)
+  • Discord webhooks (notifications)
+  • JWT/Auth middleware (implement in Hono)
+
+═════════════════════════════════════════════════════════════════════════════
+
+CI/CD WORKFLOW SUMMARY
+──────────────────────
+
+1. ci.yml (all pushes/PRs)
+   ├─ Build frontend image
+   ├─ Build backend image
+   ├─ Push to GHCR
+   └─ Notify Discord (✅ success or ❌ failure with logs)
+
+2. deploy-staging.yml (develop branch)
+   ├─ Build & push images
+   ├─ SSH deploy to staging server
+   ├─ Pull & restart services
+   └─ Notify Discord with staging URL
+
+3. deploy-production.yml (main branch)
+   ├─ Build & push images
+   ├─ SSH deploy to production server
+   ├─ Pull & restart services
+   └─ Notify Discord with production URL
+
+4. notify-issue.yml (new issue opened)
+   ├─ Send Discord webhook
+   └─ Post bot comment on issue
+
+5. notify-pr.yml (PR opened/reopened)
+   └─ Send Discord webhook
+
+═════════════════════════════════════════════════════════════════════════════
+
+QUICK COMMANDS
+──────────────
+
+Local Development:
+  docker-compose up --build          # Start all services locally
+  docker-compose down                # Stop all services
+  docker-compose logs -f             # View logs
+
+Docker Swarm (on server):
+  docker swarm init                  # Initialize swarm (one-time)
+  docker stack deploy -c docker-stack.yml app_prod
+  docker service ls                  # List services
+  docker service logs app_prod_backend  # View service logs
+  docker stack rm app_prod           # Remove stack
+
+Nomad (on server):
+  nomad job run nomad/backend.nomad  # Deploy job
+  nomad status backend               # Check job status
+  nomad logs -f backend -task api    # View logs
+  nomad job stop backend             # Stop job
+
+Deployment Scripts:
+  bash scripts/validate.sh           # Validate local setup
+  bash scripts/setup-server.sh       # Setup new server
+  bash scripts/deploy.sh             # Deploy script (used by CI/CD)
+
+Database:
+  psql -h localhost -p 5432 -U app -d appdb  # Connect locally
+  psql -h pgbouncer -p 6432 -U app -d appdb  # Via pgbouncer
+  bash pgbouncer/gen-hash.sh changeme        # Generate password hash
+
+═════════════════════════════════════════════════════════════════════════════
+
+GITHUB SECRETS TO CONFIGURE
+────────────────────────────
+
+Essential (for CI/CD):
+  DISCORD_WEBHOOK       → Discord webhook URL
+  STAGE_HOST           → Staging server IP/domain
+  PROD_HOST            → Production server IP/domain
+  DEPLOY_USER          → SSH user (default: deploy)
+  SSH_PRIVATE_KEY      → Private SSH key (4096-bit RSA)
+  STAGE_APP_URL        → https://staging.example.com
+  PROD_APP_URL         → https://example.com
+
+═════════════════════════════════════════════════════════════════════════════
+
+DEPLOYMENT FLOW
+───────────────
+
+Developer commits code
+         ↓
+Push to develop branch
+         ↓
+[CI Workflow Runs]
+  • Build frontend & backend
+  • Push to GHCR
+  • Notify Discord
+         ↓
+[Deploy Staging Workflow Runs]
+  • SSH to staging server
+  • Pull latest images
+  • Deploy stack (Docker Swarm or Nomad)
+  • Notify Discord with URL
+         ↓
+Developer tests on staging
+         ↓
+Create PR → Merge to main
+         ↓
+[Deploy Production Workflow Runs]
+  • SSH to production server
+  • Pull latest images
+  • Deploy stack
+  • Notify Discord with prod URL
+         ↓
+Live in production! 🚀
+
+═════════════════════════════════════════════════════════════════════════════
+
+DOCUMENTATION GUIDE
+───────────────────
+
+Start here:
+  1. QUICKSTART.md          ← 5-minute setup overview
+  2. README.md              ← Detailed project description
+
+Then read:
+  3. docs/GITHUB_ACTIONS.md ← How to configure secrets & workflows
+  4. docs/DEPLOYMENT.md     ← How to set up servers & manual deploy
+  5. docs/ARCHITECTURE.md   ← System design, scaling, security
+
+═════════════════════════════════════════════════════════════════════════════
+
+SUPPORT & NEXT STEPS
+────────────────────
+
+1. Initialize git repository
+   git init && git add . && git commit -m "Initial scaffold"
+
+2. Create GitHub repository and push
+   git remote add origin <repo-url>
+   git push -u origin main
+
+3. Configure GitHub secrets (5 minutes)
+   See: docs/GITHUB_ACTIONS.md → Step 1
+
+4. Test CI/CD locally
+   docker-compose up --build
+
+5. Deploy
+   Push to develop → stage
+   Merge to main → production
+
+Questions? Check:
+  • docs/ folder for detailed guides
+  • GitHub Actions logs for workflow errors
+  • Discord notifications for deployment status
+
+═════════════════════════════════════════════════════════════════════════════
