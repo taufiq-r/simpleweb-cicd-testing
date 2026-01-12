@@ -16,15 +16,13 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Send Discord notification
-      shell: bash
-      env:
+    - env:
         WEBHOOK_URL: ${{ inputs.webhook }}
         STATUS: ${{ inputs.status }}
         TITLE: ${{ inputs.title }}
         BODY: ${{ inputs.body }}
       run: |
-        # Determine color based on status
+        
         case "$STATUS" in
           success)
             COLOR=3066993  # Green
@@ -37,14 +35,18 @@ runs:
             ;;
         esac
         
-        # Send to Discord
-        curl -X POST "$WEBHOOK_URL" \
-          -H 'Content-Type: application/json' \
-          -d "{
-            \"embeds\": [{
-              \"title\": \"$TITLE\",
-              \"description\": \"$BODY\",
-              \"color\": $COLOR,
-              \"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"
-            }]
-          }"
+        jq -n \
+          --arg title "$TITLE" \
+          --arg description "$BODY" \
+          --arg color "$COLOR" \
+          --arg timestamp "$(date -u + '%Y-%m-%dT%H:%M:%SZ')" \
+          '{
+            embeds: [{
+              title: $title,
+              description: $body,
+              color: $color,
+              timestamp: $timestamp
+              }]
+            }' | curl -s -X POST "$WEBHOOK_URL" \
+                -H "Content-Type: application/json" \
+                -d @-
