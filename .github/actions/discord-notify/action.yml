@@ -39,9 +39,9 @@ runs:
           
           jq -n \
             --arg title "$TITLE" \
-            --arg description "$BODY" \
+            --arg body "$BODY" \
             --arg color "$COLOR" \
-            --arg timestamp "$(date -u + '%Y-%m-%dT%H:%M:%SZ')" \
+            --arg timestamp "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
             '{
               embeds: [{
                 title: $title,
