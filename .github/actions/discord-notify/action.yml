@@ -16,39 +16,41 @@ inputs:
 runs:
   using: composite
   steps:
-    - env:
+    - name: Send Discord notification
+      shell: bash
+      env:
         WEBHOOK_URL: ${{ inputs.webhook }}
         STATUS: ${{ inputs.status }}
         TITLE: ${{ inputs.title }}
         BODY: ${{ inputs.body }}
       run: |
         
-        case "$STATUS" in
-          success)
-            COLOR=3066993  # Green
-            ;;
-          failure)
-            COLOR=15158332  # Red
-            ;;
-          *)
-            COLOR=9807270   # Orange
-            ;;
-        esac
-        
-        jq -n \
-          --arg title "$TITLE" \
-          --arg description "$BODY" \
-          --arg color "$COLOR" \
-          --arg timestamp "$(date -u + '%Y-%m-%dT%H:%M:%SZ')" \
-          '{
-            embeds: [{
-              title: $title,
-              description: $body,
-              color: $color,
-              timestamp: $timestamp
-              }]
-            }' | curl -s -X POST "$WEBHOOK_URL" \
-                -H "Content-Type: application/json" \
-                -d @-
+          case "$STATUS" in
+            success)
+              COLOR=3066993  # Green
+              ;;
+            failure)
+              COLOR=15158332  # Red
+              ;;
+            *)
+              COLOR=9807270   # Orange
+              ;;
+          esac
+          
+          jq -n \
+            --arg title "$TITLE" \
+            --arg description "$BODY" \
+            --arg color "$COLOR" \
+            --arg timestamp "$(date -u + '%Y-%m-%dT%H:%M:%SZ')" \
+            '{
+              embeds: [{
+                title: $title,
+                description: $body,
+                color: $color,
+                timestamp: $timestamp
+                }]
+              }' | curl -s -X POST "$WEBHOOK_URL" \
+                  -H "Content-Type: application/json" \
+                  -d @-
 
 #TEST
