@@ -11,11 +11,15 @@ jobs:
       IMAGE_REGISTRY: ghcr.io
       IMAGE_OWNER: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.event.repository.name }}
-      FRONTEND_IMAGE: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.REPO_NAME }}-frontend:latest
-      BACKEND_IMAGE: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.REPO_NAME }}-backend:latest
+      
     steps:
       - uses: actions/checkout@v4
-
+      
+      - name: Set images tags
+        shell: bash
+        run: |
+          echo "FRONTEND_IMAGE = ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.REPO_NAME }}-frontend:latest" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE= ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.REPO_NAME }}-backend:latest" >> $GITHUB_ENV
       - name: Build & push images
         uses: docker/build-push-action@v4
         with:
