@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build & Push images
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64, prod] #ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 

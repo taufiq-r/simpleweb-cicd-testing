@@ -9,7 +9,7 @@ permissions:
   packages: write
 jobs:
   build-and-deploy:
-    runs-on: [self-hosted, linux, prod] #ubuntu-latest
+    runs-on: [self-hosted, linux, X64, prod] #ubuntu-latest
     env:
       IMAGE_REGISTRY: ghcr.io
       IMAGE_OWNER: ${{ github.repository_owner }}
