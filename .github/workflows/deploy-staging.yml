@@ -2,11 +2,12 @@ name: deploy-staging
 
 on:
   push:
-    branches: [ 'develop' ]
+    branches: [ 'staged' ]
 
 permissions:
   contents: read
   packages: write
+  
 jobs:
   build-and-deploy:
     runs-on: [self-hosted] #, linux, X64, prod] ubuntu-latest

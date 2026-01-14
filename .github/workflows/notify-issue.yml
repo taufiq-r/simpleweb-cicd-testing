@@ -1,4 +1,4 @@
-name: Notify Issue
+name: Notify Issue + Create Discord Thread
 
 on:
   issues:
@@ -7,25 +7,81 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Send Discord notif for new issue
-        uses: ./.github/actions/discord-notify
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: info
-          title: 'New Issue: ${{ github.event.issue.title }}'
-          body: "${{ github.event.issue.html_url }}\nOpened by: ${{ github.event.issue.user.login }}"
+        - name: Send Discord notif for new issue
+          id: discord_message
+          shell: bash
+          run: |
+            RESPONSE=$(curl -s -X POST \
+              -H "Authorization: Bot ${{secrets.DISCORD_BOT_TOKEN}}"\
+              -H "Content-Type: application/json" \
+              https://discord.com/api/v10/channels/${{ secrets.DISCORD_CHANNEL_ID }}"/messages \
+             -d "{
+              \"content\": \"📌 **New Github Issue Opened**\n\n**${{ github.event.issue.title }}**\n\n${{github.event.issue.html_url}}\n\nOpened by: `${{ github.event.issue.user.login }}`\"
+              }")"
 
-      - name: Post a bot comment on the issue
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issue = context.issue;
-            await github.rest.issues.createComment({
-              owner: issue.owner || context.repo.owner,
-              repo: issue.repo || context.repo.repo,
-              issue_number: issue.number,
-              body: 'Thanks for the report! A team bot thread has been created in the Dev channel.'
-            });
+            MESSAGE_ID=$(echo $RESPONSE | jq -r .id)
+
+             if [ "$MESSAGE_ID" = "null" ] || [ -z "$MESSAGE_ID" ]; then
+               echo \"failed to create Discord Message\"
+               echo \"$RESPONSE\"
+              exit 1
+             fi
+
+            echo "MESSAGE_ID=$MESSAGE_ID" >> $GITHUB_OUTPUT
+
+        - name: Create Discord thread for issue
+          shell: bash
+          run: |
+            THREAD=$(curl -s X POST \
+            -H "Authorization: Bot ${{ secrets.DISCORD_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            https://discord.com/api/v10/channels/${{ secrets.DISCORD_CHANNEL_ID }}/messages/${{ steps.discord_message.outputs.MESSAGE_ID }}/threads \
+            -d "{
+              \"name\": \"Issue-${{ github.event.issue.number }}\"
+              }")
+                
+              THREAD_URL=$(echo "$THREAD" | Jq -r .url)
+              
+              echo "THREAD_URL=$THREAD_URL" >> $GITHUB_ENV
+          
+        - name: Post a bot comment on the issue
+          uses: actions/github-script@v6
+          with:
+           github-token: ${{ secrets.GITHUB_TOKEN }} 
+           script: |
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: `✅ Discord thread created:\n${process.env.THREAD_URL}`
+                  });
+                
+
+# jobs:
+#   notify:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Send Discord notif for new issue
+#         uses: ./.github/actions/discord-notify
+#         with:
+#           webhook: ${{ secrets.DISCORD_WEBHOOK }}
+#           status: info
+#           title: 'New Issue: ${{ github.event.issue.title }}'
+#           body: "${{ github.event.issue.html_url }}\nOpened by: ${{ github.event.issue.user.login }}"
+
+#       - name: Post a bot comment on the issue
+#         uses: actions/github-script@v6
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const issue = context.issue;
+#             await github.rest.issues.createComment({
+#               owner: issue.owner || context.repo.owner,
+#               repo: issue.repo || context.repo.repo,
+#               issue_number: issue.number,
+#               body: 'Thanks for the report! A team bot thread has been created in the Dev channel.'
+#             });
